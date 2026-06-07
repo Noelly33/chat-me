@@ -4,12 +4,12 @@ ChatMe permite a múltiples usuarios autenticarse y comunicarse de forma instant
 
 ## Características
 
-- Autenticación con registro e inicio de sesión (contraseñas con `bcrypt` + JWT).
+- Autenticación con registro e inicio de sesión contraseñas con `bcrypt` + JWT.
 - Mensajería en tiempo real mediante Socket.IO (WebSockets).
 - Lista de usuarios conectados actualizada en vivo.
-- Indicador de "escribiendo...".
+- Indicador de estado.
 - Avisos del sistema cuando un usuario entra o sale.
-- Interfaz responsiva (React + Vite).
+- Interfaz responsiva.
 - Conexión de socket protegida, solo entra quien tiene un token válido.
 
 ## Tecnologías
@@ -52,7 +52,7 @@ Abre **http://localhost:5173** en el navegador. Para probar el chat con varios u
 |------------------|----------------------------------------------|
 | `PORT`           | Puerto del servidor (por defecto 4000)       |
 | `JWT_SECRET`     | Secreto para firmar los JWT                   |
-| `JWT_EXPIRES_IN` | Expiración del token (ej. `2h`)               |
+| `JWT_EXPIRES_IN` | Expiración del token               |
 | `CLIENT_ORIGIN`  | Origen permitido para CORS (URL del cliente)  |
 
 ### `client/.env`
