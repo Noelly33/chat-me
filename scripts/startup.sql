@@ -3,16 +3,25 @@ CREATE TABLE "usuarios" (
   "id" uuid PRIMARY KEY,
   "nombre_usuario" varchar UNIQUE NOT NULL,
   "email" varchar UNIQUE NOT NULL,
-  "password_hash" varchar,
+  "password_hash" varchar NOT NULL,
+  "nombres" varchar NOT NULL,
+  "apellidos" varchar NOT NULL,
+  "fecha_nacimiento" date,
+  "numero_telefono" varchar,
   "avatar_url" varchar,
   "creado_at" timestamp DEFAULT (now())
 );
 
-CREATE TABLE "conversaciones" (
+CREATE TABLE "refresh_tokens" (
   "id" uuid PRIMARY KEY,
-  "tipo" varchar,
-  "nombre" varchar,
-  "creado_at" timestamp DEFAULT (now())
+  "usuario_id" uuid NOT NULL,
+  "token" varchar NOT NULL UNIQUE,
+  "fecha_expiracion" timestamp NOT NULL,
+  "esta_revocado" boolean DEFAULT false NOT NULL,
+  "creado_at" timestamp DEFAULT (now()),
+  
+  CONSTRAINT "fk_usuario_tokens" FOREIGN KEY ("usuario_id") 
+    REFERENCES "usuarios" ("id") ON DELETE CASCADE
 );
 
 CREATE TABLE "participantes_conversacion" (
