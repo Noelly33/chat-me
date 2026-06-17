@@ -30,18 +30,19 @@ export function buildApp(chatService: ChatService, clientOrigin: string) {
   app.get('/health', (c) => c.json({ status: 'ok', time: new Date().toISOString() }))
 
   /**
-   * Username is injected by the API Gateway as a request header.
+   * Username and userId are injected by the API Gateway after JWT validation.
    * This node never validates tokens — that's the gateway's responsibility.
    */
   app.get(
     '/ws',
     upgradeWebSocket((c) => {
-      const username = c.req.header('x-username') ?? 'anonymous'
+      const username  = c.req.header('x-username') ?? 'anonymous'
+      const userId    = c.req.header('x-user-id')  ?? ''
       const sessionId = randomUUID()
 
       return {
         async onOpen(_, ws) {
-          await chatService.handleConnect(sessionId, username, {
+          await chatService.handleConnect(sessionId, username, userId, {
             send: (data) => ws.send(data),
           })
         },

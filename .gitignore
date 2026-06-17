@@ -6,6 +6,7 @@ node_modules/
 client/dist/
 dist/
 *.log
+CLAUDE.md
 npm-debug.log*
 server/data/users.json
 .DS_Store

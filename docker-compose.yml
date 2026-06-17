@@ -14,6 +14,17 @@ services:
       timeout: 3s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   auth-sidecar:
     build:
       context: ./auth-sidecar
@@ -31,11 +42,14 @@ services:
     environment:
       PORT: "4001"
       REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost}
     networks:
       - internal
     depends_on:
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   ws-node-2:
@@ -45,11 +59,14 @@ services:
     environment:
       PORT: "4001"
       REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost}
     networks:
       - internal
     depends_on:
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   ws-node-3:
@@ -59,11 +76,33 @@ services:
     environment:
       PORT: "4001"
       REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost}
     networks:
       - internal
     depends_on:
       redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  messaging-worker:
+    build:
+      context: ./Consumer.Messaging.Worker
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__PostgresConnection: ${POSTGRES_CONNECTION}
+      ConnectionStrings__Redis: redis:6379
+      RabbitMq__Host: rabbitmq
+      RabbitMq__VirtualHost: /
+      RabbitMq__Username: guest
+      RabbitMq__Password: guest
+    networks:
+      - internal
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   nginx:

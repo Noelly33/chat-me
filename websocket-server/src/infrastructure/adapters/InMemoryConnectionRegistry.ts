@@ -4,8 +4,8 @@ import type { MessageSender } from '../../domain/ports/ChatService.js'
 export class InMemoryConnectionRegistry implements ConnectionRegistry {
   private readonly connections = new Map<string, ConnectionInfo>()
 
-  add(sessionId: string, username: string, sender: MessageSender): void {
-    this.connections.set(sessionId, { username, sender })
+  add(sessionId: string, username: string, userId: string, sender: MessageSender): void {
+    this.connections.set(sessionId, { username, userId, sender })
   }
 
   remove(sessionId: string): ConnectionInfo | undefined {
@@ -22,5 +22,9 @@ export class InMemoryConnectionRegistry implements ConnectionRegistry {
 
   getUsername(sessionId: string): string | undefined {
     return this.connections.get(sessionId)?.username
+  }
+
+  getUserId(sessionId: string): string | undefined {
+    return this.connections.get(sessionId)?.userId
   }
 }

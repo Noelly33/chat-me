@@ -24,9 +24,18 @@ CREATE TABLE "refresh_tokens" (
     REFERENCES "usuarios" ("id") ON DELETE CASCADE
 );
 
+-- 1. Tabla de conversaciones (Faltaba)
+CREATE TABLE "conversaciones" (
+  "id" uuid PRIMARY KEY,
+  "es_grupal" boolean DEFAULT false,
+  "nombre" varchar, -- Solo si es grupal
+  "creado_at" timestamp DEFAULT (now())
+);
+
+-- 2. Tu tabla de participantes (Perfecta, solo añadimos FK)
 CREATE TABLE "participantes_conversacion" (
-  "conversacion_id" uuid,
-  "usuario_id" uuid,
+  "conversacion_id" uuid REFERENCES "conversaciones"("id") ON DELETE CASCADE,
+  "usuario_id" uuid REFERENCES "usuarios"("id") ON DELETE CASCADE,
   "unido_at" timestamp DEFAULT (now()),
   "ultimo_leido_at" timestamp,
   PRIMARY KEY ("conversacion_id", "usuario_id")
@@ -38,14 +47,19 @@ CREATE TABLE "tipos_mensaje" (
   "descripcion" varchar
 );
 
+-- 3. Mensajes con la FK hacia conversaciones e índices
 CREATE TABLE "mensajes" (
-  "id" uuid PRIMARY KEY,
-  "conversacion_id" uuid,
+  "id" uuid PRIMARY KEY, -- Generado por el Front
+  "conversacion_id" uuid REFERENCES "conversaciones"("id") ON DELETE CASCADE,
   "emisor_id" uuid,
-  "tipo_mensaje_id" int,
+  "tipo_mensaje_id" int REFERENCES "tipos_mensaje"("id"),
   "contenido" text,
   "creado_at" timestamp DEFAULT (now())
 );
+
+-- Índices para que el Worker y las queries vuelen
+CREATE INDEX idx_mensajes_conversacion_fecha ON "mensajes" ("conversacion_id", "creado_at" DESC);
+CREATE INDEX idx_participantes_usuario ON "participantes_conversacion" ("usuario_id");
 
 COMMENT ON COLUMN "usuarios"."id" IS 'Identificador único del usuario';
 
