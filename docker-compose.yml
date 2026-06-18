@@ -25,13 +25,17 @@ services:
       timeout: 5s
       retries: 5
 
-  auth-sidecar:
+  sidecar-auth-api:
     build:
-      context: ./auth-sidecar
+      context: ./SideCar.Auth.Api
     restart: unless-stopped
     environment:
-      PORT: "3000"
-      JWT_SECRET: ${JWT_SECRET}
+      ConnectionStrings__PostgresConnection: ${POSTGRES_CONNECTION}
+      JwtSettings__Secret: ${JWT_SECRET}
+      JwtSettings__Issuer: ${JWT_ISSUER:-SideCar.Auth.Api}
+      JwtSettings__Audience: ${JWT_AUDIENCE:-SideCar.Auth.Clients}
+      JwtSettings__AccessTokenExpirationInMinutes: ${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:-15}
+      JwtSettings__RefreshTokenExpirationInDays: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:-7}
     networks:
       - internal
 
@@ -115,7 +119,7 @@ services:
     networks:
       - internal
     depends_on:
-      - auth-sidecar
+      - sidecar-auth-api
       - ws-node-1
       - ws-node-2
       - ws-node-3

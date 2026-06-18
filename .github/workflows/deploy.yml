@@ -1,0 +1,90 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+env:
+  DOTNET_VERSION: "10.0.x"
+
+jobs:
+  build:
+    name: Build .NET projects
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore SideCar.Auth.Api
+        run: dotnet restore SideCar.Auth.Api/SideCar.Auth.Api/SideCar.Auth.Api.csproj
+
+      - name: Build SideCar.Auth.Api
+        run: dotnet build SideCar.Auth.Api/SideCar.Auth.Api/SideCar.Auth.Api.csproj -c Release --no-restore
+
+      - name: Restore Consumer.Messaging.Worker
+        run: dotnet restore Consumer.Messaging.Worker/Consumer.Messaging.Worker/Consumer.Messaging.Worker.csproj
+
+      - name: Build Consumer.Messaging.Worker
+        run: dotnet build Consumer.Messaging.Worker/Consumer.Messaging.Worker/Consumer.Messaging.Worker.csproj -c Release --no-restore
+
+  migrate:
+    name: Apply EF Core migrations
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install/update dotnet-ef
+        run: dotnet tool update --global dotnet-ef --version 10.*
+
+      - name: Add dotnet tools to PATH
+        run: echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Migrate SideCar.Auth.Api database
+        working-directory: SideCar.Auth.Api/SideCar.Auth.Api
+        run: dotnet ef database update --connection "${{ secrets.POSTGRES_CONNECTION }}"
+
+      - name: Migrate Consumer.Messaging.Worker database
+        working-directory: Consumer.Messaging.Worker/Consumer.Messaging.Worker
+        run: dotnet ef database update --connection "${{ secrets.POSTGRES_CONNECTION }}"
+
+  deploy:
+    name: Build images and deploy via Docker Compose
+    needs: migrate
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write .env for Docker Compose
+        run: |
+          cat > .env <<EOF
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_ISSUER=${{ secrets.JWT_ISSUER }}
+          JWT_AUDIENCE=${{ secrets.JWT_AUDIENCE }}
+          JWT_ACCESS_TOKEN_EXPIRATION_MINUTES=${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION_MINUTES }}
+          JWT_REFRESH_TOKEN_EXPIRATION_DAYS=${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION_DAYS }}
+          POSTGRES_CONNECTION=${{ secrets.POSTGRES_CONNECTION }}
+          CLIENT_ORIGIN=${{ secrets.CLIENT_ORIGIN }}
+          EOF
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Deploy stack
+        run: docker compose up -d --remove-orphans
+
+      - name: Remove dangling images
+        run: docker image prune -f
