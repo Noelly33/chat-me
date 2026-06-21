@@ -39,6 +39,15 @@ services:
     networks:
       - internal
 
+  core-mensajes-api:
+    build:
+      context: ./Core.Mensajes.Api
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__PostgresConnection: ${POSTGRES_CONNECTION}
+    networks:
+      - internal
+
   ws-node-1:
     build:
       context: ./websocket-server
@@ -120,6 +129,7 @@ services:
       - internal
     depends_on:
       - sidecar-auth-api
+      - core-mensajes-api
       - ws-node-1
       - ws-node-2
       - ws-node-3
