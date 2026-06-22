@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SideCar.Auth.Api.InfraStructure.Context;
+using SideCar.Auth.Api.InfraStructure.CookieAuth;
 using SideCar.Auth.Api.InfraStructure.mappers;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
@@ -56,6 +57,22 @@ builder.Services
             ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
             ClockSkew = TimeSpan.Zero
+        };
+
+        var authCookieName = builder.Configuration["JwtSettings:AuthCookieName"]
+            ?? AuthCookies.DefaultAuthCookieName;
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                if (ctx.Request.Cookies.TryGetValue(authCookieName, out var cookieToken)
+                    && !string.IsNullOrWhiteSpace(cookieToken))
+                {
+                    ctx.Token = cookieToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 

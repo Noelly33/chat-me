@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SideCar.Auth.Api.Domain.Services;
 using SideCar.Auth.Api.DTOS;
+using SideCar.Auth.Api.InfraStructure.CookieAuth;
 
 namespace SideCar.Auth.Api.Controllers
 {
@@ -16,6 +17,7 @@ namespace SideCar.Auth.Api.Controllers
         private IValidator<LoginUserDTO> _loginUserValidator;
         private IAuthService _authService;
         private ITokenService _tokenService;
+        private IConfiguration _config;
 
 
         public AuthController(
@@ -23,13 +25,15 @@ namespace SideCar.Auth.Api.Controllers
             IValidator<UpdateUserDTO> updateUserValidator,
             IValidator<LoginUserDTO> loginUserValidator,
             IAuthService authService,
-            ITokenService tokenService)
+            ITokenService tokenService,
+            IConfiguration config)
         {
             _registerUserValidator = registerUserValidator;
             _updateUserValidator = updateUserValidator;
             _loginUserValidator = loginUserValidator;
             _authService = authService;
             _tokenService = tokenService;
+            _config = config;
         }
 
         [HttpPost("register")]
@@ -41,6 +45,7 @@ namespace SideCar.Auth.Api.Controllers
                 return BadRequest(MsResponse<RegisterUserDTO>.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToList()));
             }
             RegisterResultDTO result = await _authService.register(request.Data);
+            AuthCookies.Set(Response, _config, result.Token, result.RefreshToken, result.RefreshTokenExpiration);
             return Ok(MsResponse<RegisterResultDTO>.Ok(result));
         }
 
@@ -55,6 +60,7 @@ namespace SideCar.Auth.Api.Controllers
             try
             {
                 var result = await _authService.Login(request.Data);
+                AuthCookies.Set(Response, _config, result.Token, result.RefreshToken, result.RefreshTokenExpiration);
                 return Ok(MsResponse<LoginResultDTO>.Ok(result));
             }
             catch (UnauthorizedAccessException ex)
@@ -64,15 +70,34 @@ namespace SideCar.Auth.Api.Controllers
         }
 
         [HttpPost("refresh")]
-        public async Task<ActionResult<MsResponse<TokenResponseDto>>> Refresh([FromBody] MsRequest<ResfreshTokenRequestDTO> request)
+        public async Task<ActionResult<MsResponse<TokenResponseDto>>> Refresh([FromBody] MsRequest<ResfreshTokenRequestDTO>? request = null)
         {
+            var refreshFromCookie = Request.Cookies[AuthCookies.RefreshCookieName(_config)];
+            var refreshFromBody = request?.Data?.RefreshToken;
+            var refreshToken = !string.IsNullOrWhiteSpace(refreshFromCookie)
+                ? refreshFromCookie
+                : refreshFromBody;
+
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                return Unauthorized(MsResponse<TokenResponseDto>.Fail("Refresh token ausente", "Refresh token rechazado"));
+            }
+
+            var dto = new ResfreshTokenRequestDTO
+            {
+                Token = request?.Data?.Token,
+                RefreshToken = refreshToken,
+            };
+
             try
             {
-                var result = await _tokenService.ResfreshToken(request.Data);
+                var result = await _tokenService.ResfreshToken(dto);
+                AuthCookies.Set(Response, _config, result.AccessToken, result.RefreshToken, result.RefreshTokenExpiration);
                 return Ok(MsResponse<TokenResponseDto>.Ok(result));
             }
             catch (Microsoft.IdentityModel.Tokens.SecurityTokenException ex)
             {
+                AuthCookies.Clear(Response, _config);
                 return Unauthorized(MsResponse<TokenResponseDto>.Fail(ex.Message, "Refresh token rechazado"));
             }
         }
@@ -91,7 +116,15 @@ namespace SideCar.Auth.Api.Controllers
             return Unauthorized(MsResponse<ValidateTokenResponseDTO>.Fail(result.Reason ?? "Invalid token", "Token inválido"));
         }
 
-        [Authorize]
+        [HttpPost("logout")]
+        public async Task<ActionResult<MsResponse<object>>> Logout()
+        {
+            var refreshFromCookie = Request.Cookies[AuthCookies.RefreshCookieName(_config)];
+            await _tokenService.RevokeRefreshToken(refreshFromCookie ?? string.Empty);
+            AuthCookies.Clear(Response, _config);
+            return Ok(MsResponse<object>.Ok(new { message = "Sesión cerrada" }));
+        }
+
         [HttpPut("profile")]
         public async Task<ActionResult<MsResponse<UpdateUserResultDTO>>> UpdateProfile([FromBody] MsRequest<UpdateUserDTO> request)
         {

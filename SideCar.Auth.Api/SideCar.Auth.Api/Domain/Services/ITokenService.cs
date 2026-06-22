@@ -10,5 +10,7 @@ namespace SideCar.Auth.Api.Domain.Services
 
         ValidateTokenResponseDTO ValidateToken(string token);
 
+        Task RevokeRefreshToken(string refreshToken);
+
     }
 }

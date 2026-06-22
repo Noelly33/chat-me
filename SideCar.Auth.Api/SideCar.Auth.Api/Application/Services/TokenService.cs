@@ -69,22 +69,36 @@ namespace SideCar.Auth.Api.Application.Services
 
         public async Task<TokenResponseDto> ResfreshToken(ResfreshTokenRequestDTO request)
         {
-            if (string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.RefreshToken))
+            if (string.IsNullOrWhiteSpace(request.RefreshToken))
             {
-                throw new SecurityTokenException("Token y refresh token son requeridos");
+                throw new SecurityTokenException("Refresh token es requerido");
             }
 
-            Guid userId = Utils.getGuidUserByExpiredToken(request.Token);
             var refreshToken = await _tokenRepository.FindByRefreshTokenAsync(request.RefreshToken);
             if (refreshToken == null || refreshToken.EstaRevocado || refreshToken.FechaExpiracion <= DateTime.UtcNow)
             {
                 throw new SecurityTokenException("Refresh token inválido o expirado");
             }
-            if (refreshToken.Usuario.Id != userId)
+
+            if (!string.IsNullOrWhiteSpace(request.Token))
             {
-                _tokenRepository.RevokeToken(refreshToken);
-                await _tokenRepository.Save();
-                throw new SecurityTokenException("Refresh token no pertenece al usuario del token de acceso");
+                try
+                {
+                    Guid userId = Utils.getGuidUserByExpiredToken(request.Token);
+                    if (refreshToken.Usuario.Id != userId)
+                    {
+                        _tokenRepository.RevokeToken(refreshToken);
+                        await _tokenRepository.Save();
+                        throw new SecurityTokenException("Refresh token no pertenece al usuario del token de acceso");
+                    }
+                }
+                catch (SecurityTokenException)
+                {
+                    throw;
+                }
+                catch
+                {
+                }
             }
 
             var usuario = refreshToken.Usuario;
@@ -102,6 +116,23 @@ namespace SideCar.Auth.Api.Application.Services
             };
 
             return await GenerarTokens(registerDto, usuario.Id);
+        }
+
+        public async Task RevokeRefreshToken(string refreshToken)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                return;
+            }
+
+            var existing = await _tokenRepository.FindByRefreshTokenAsync(refreshToken);
+            if (existing == null || existing.EstaRevocado)
+            {
+                return;
+            }
+
+            _tokenRepository.RevokeToken(existing);
+            await _tokenRepository.Save();
         }
 
         public ValidateTokenResponseDTO ValidateToken(string token)

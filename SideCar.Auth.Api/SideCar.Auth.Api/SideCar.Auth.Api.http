@@ -27,6 +27,7 @@ Content-Type: application/json
 }
 
 ### Login (Identifier acepta email o NombreUsuario)
+# @name login
 POST {{SideCar.Auth.Api_HostAddress}}/api/v1/auth/login
 Accept: application/json
 Content-Type: application/json
@@ -43,7 +44,7 @@ Content-Type: application/json
   }
 }
 
-### Refresh token (access token may be expired, refresh token must be active)
+### Refresh token (lee la cookie chat_refresh; body opcional)
 POST {{SideCar.Auth.Api_HostAddress}}/api/v1/auth/refresh
 Accept: application/json
 Content-Type: application/json
@@ -55,7 +56,6 @@ Content-Type: application/json
     "Device": "nginx-auth"
   },
   "Data": {
-    "Token": "{{accessToken}}",
     "RefreshToken": "{{refreshToken}}"
   }
 }
@@ -76,7 +76,7 @@ Content-Type: application/json
   }
 }
 
-### Update profile (requires Bearer access token in Authorization header)
+### Update profile (lee el JWT de la cookie chat_auth o del header Authorization)
 PUT {{SideCar.Auth.Api_HostAddress}}/api/v1/auth/profile
 Accept: application/json
 Content-Type: application/json
@@ -95,4 +95,7 @@ Authorization: Bearer {{accessToken}}
     "AvatarUrl": "https://cdn.example.com/avatars/juanpi95.png"
   }
 }
-###
+
+### Logout (revoca la cookie chat_refresh y limpia ambas cookies de auth)
+POST {{SideCar.Auth.Api_HostAddress}}/api/v1/auth/logout
+Accept: application/json

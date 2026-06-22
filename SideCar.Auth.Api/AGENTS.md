@@ -38,6 +38,7 @@ Run from `SideCar.Auth.Api/` unless noted.
 `Program.cs` reads:
 - `ConnectionStrings:PostgresConnection`
 - `JwtSettings:Secret`, `JwtSettings:Issuer`, `JwtSettings:Audience`, `JwtSettings:AccessTokenExpirationInMinutes`, `JwtSettings:RefreshTokenExpirationInDays`
+- `JwtSettings:AuthCookieName` (default `chat_auth`), `JwtSettings:RefreshCookieName` (default `chat_refresh`), `JwtSettings:CookiePath` (default `/`), `JwtSettings:RefreshCookiePath` (default `/api/v1/auth`), `JwtSettings:CookieSameSite` (default `Lax`), `JwtSettings:CookieSecureOnly` (default `true`). All overridable via env vars (`AUTH_COOKIE_NAME`, `REFRESH_COOKIE_NAME`, `COOKIE_SAME_SITE`, `COOKIE_SECURE_ONLY`).
 
 `appsettings.json` only carries logging + `AllowedHosts`. Real values (Postgres host, DB password, JWT secret, lifetimes) are in `appsettings.Development.json` and **are checked into the repo**. Treat that file as a leak:
 
@@ -47,15 +48,23 @@ Run from `SideCar.Auth.Api/` unless noted.
 ## API contract
 Every endpoint expects a JSON body shaped like `MsRequest<T>` (`{ Header: { TransactionId, Timestamp, Device }, Data: <T> }`) and returns `MsResponse<T>`. See `DTOS/MsRequest.cs` and `DTOS/MsResponse.cs`.
 
+**Modelo de auth con cookies HttpOnly.** `register`, `login` y `refresh` setean dos cookies (configurables vía `JwtSettings`):
+- `chat_auth` (default) — access token. `HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=AccessTokenExpirationInMinutes`.
+- `chat_refresh` (default) — refresh token. `HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth; Expires=RefreshTokenExpirationInDays`. Path-scoped para que solo viaje a `/refresh` y `/logout`.
+- En dev HTTP local: `JwtSettings:CookieSecureOnly=false`. En cross-origin (front en otro dominio): `CookieSameSite=None` requiere `CookieSecureOnly=true`.
+
 Currently exposed (all under `api/v1/auth`):
 
-- `POST /register` — runs `RegisterUserValidator` (FluentValidation, including a DB-backed email-uniqueness check via `IAuthRepository.GetUserByEmail`), then `IAuthService.register`, returns access + refresh tokens.
-- `POST /login` — takes `MsRequest<LoginUserDTO>` with `Identifier` (email OR `NombreUsuario`) and `Password`. `AuthService.Login` looks up by email first, then username, then `PasswordHasher<Usuario>.VerifyHashedPassword` validates the hash; on miss it throws `UnauthorizedAccessException` and the controller returns `401` with a generic "Credenciales inválidas" message (no user-enumeration leak). On success it reuses `ITokenService.GenerarTokens` and returns the same shape as register (`LoginResultDTO`: email, access token, refresh token, expiration).
-- `POST /refresh` — takes `{ Token (expired access), RefreshToken }` in `Data`. `TokenService.ResfreshToken` (note the typo) revokes the old refresh token, then issues a new access + refresh pair (rotation). Throws `SecurityTokenException` on bad/expired/mismatched tokens; controller maps to `401`.
-- `POST /validate` — takes `{ Token }` in `Data`. Stateless, no DB hit: validates JWT signature + lifetime + issuer + audience, returns `{ valid, userId, username, email, expiresAt, reason? }`. Designed to be called from nginx `auth_request` and from the upstream microservices; `200` for valid, `401` for invalid.
-- `PUT /profile` — `[Authorize]`. Updates the authenticated user's profile. `userId` is read from the `NameIdentifier` claim; the body is partial (any field may be `null` to keep current value). Returns the updated user.
+- `POST /register` — runs `RegisterUserValidator` (FluentValidation, including a DB-backed email-uniqueness check via `IAuthRepository.GetUserByEmail`), then `IAuthService.register`, returns access + refresh tokens in body **and** sets `chat_auth` + `chat_refresh` cookies.
+- `POST /login` — takes `MsRequest<LoginUserDTO>` with `Identifier` (email OR `NombreUsuario`) and `Password`. `AuthService.Login` looks up by email first, then username, then `PasswordHasher<Usuario>.VerifyHashedPassword` validates the hash; on miss it throws `UnauthorizedAccessException` and the controller returns `401` with a generic "Credenciales inválidas" message (no user-enumeration leak). On success it reuses `ITokenService.GenerarTokens`, sets both cookies, and returns the same shape as register (`LoginResultDTO`: email, access token, refresh token, expiration).
+- `POST /refresh` — reads `chat_refresh` from the cookie jar; falls back to `MsRequest<ResfreshTokenRequestDTO>.RefreshToken` in the body if the cookie is absent. `TokenService.ResfreshToken` (note the typo) revokes the old refresh token, then issues a new access + refresh pair (rotation). On success both cookies are rotated (re-issued with fresh values). On 401 the response also clears both cookies. Throws `SecurityTokenException` on bad/expired/mismatched tokens; controller maps to `401`.
+- `POST /logout` — revokes the refresh token currently in the `chat_refresh` cookie (no-op if absent or already revoked), then clears both cookies via `Max-Age=0`. Idempotent.
+- `POST /validate` — takes `{ Token }` in `Data`. Stateless, no DB hit: validates JWT signature + lifetime + issuer + audience, returns `{ valid, userId, username, email, expiresAt, reason? }`. Designed to be called from nginx `auth_request` and from the upstream microservices; `200` for valid, `401` for invalid. **nginx is responsible for extracting the token from the `Cookie` header or `Authorization` Bearer before calling this endpoint** — this method does not touch cookies.
+- `PUT /profile` — `[Authorize]`. The middleware `JwtBearer` reads the token via an `OnMessageReceived` event configured in `Program.cs` that pulls from the `chat_auth` cookie first; if absent, falls back to the `Authorization: Bearer` header. Updates the authenticated user's profile. `userId` is read from the `NameIdentifier` claim; the body is partial (any field may be `null` to keep current value). Returns the updated user.
 
 `TokenService.ResfreshToken` (typo is intentional and preserved from the original signature) implements token rotation: the old refresh token is marked `EstaRevocado` and a fresh pair is issued in the same `SaveChanges`. Reuse of a revoked refresh token now fails instead of silently re-issuing.
+
+`ITokenService.RevokeRefreshToken(string refreshToken)` (added with the cookie model) is the no-throw helper used by `/logout`: looks up the token, marks it `EstaRevocado`, saves; returns silently if the token is missing or already revoked.
 
 ## Conventions / gotchas
 - **Namespace casing is inconsistent** (`InfraStructure`, `mappers`, `Validators`, `DTOS`). Match the existing casing in each folder when adding files; do not rename folders as a drive-by.
@@ -68,9 +77,13 @@ Currently exposed (all under `api/v1/auth`):
 ## Common footguns
 - `Microsoft.AspNetCore.OpenApi` is referenced (for `MapOpenApi()` in dev) but `Swashbuckle` is not. Do not try to use Swagger UI without adding it.
 - `JwtBearer` is wired in `Program.cs` (`AddAuthentication().AddJwtBearer(...)` + `app.UseAuthentication()`) and the secret/issuer/audience come from `JwtSettings`. Missing or empty `JwtSettings:Secret` at startup throws `InvalidOperationException` and the app refuses to start — do not weaken that check.
+- The `JwtBearer` `OnMessageReceived` event reads from the `chat_auth` cookie (name configurable). If you change the cookie name, update both `AuthCookies.AuthCookieName(_config)` references and the nginx `map $http_cookie` regex — otherwise nginx and the API disagree on which cookie carries the JWT.
+- `InfraStructure/CookieAuth/AuthCookies.cs` is a static helper (not DI-registered). Pass `IConfiguration` through to it from the controller; do not pull `IConfiguration` from `HttpContext` indirectly. Cookie options come from `JwtSettings:*` keys with sensible defaults — match the casing of the keys exactly when reading.
+- Setting `CookieSecureOnly=false` is **dev-only**. In any non-local environment set it back to `true`. Browsers reject `SameSite=None` without `Secure`, and silently drop `Secure` cookies over HTTP.
 - `TokenService.ValidateToken` is intentionally stateless (no DB call) so nginx `auth_request` is cheap. Tradeoff: a token for a deleted user stays valid until expiry. If you need stronger guarantees, add a `GetUserById` check in `AuthService` and call it from a separate endpoint.
 - The `update` flow uses EF change tracking: `GetUserById` returns a tracked entity and `Save()` flushes property changes. Do not call `AsNoTracking()` on update paths.
-- `PUT /profile` is the only `[Authorize]` endpoint. All others (`register`, `login`, `refresh`, `validate`) are anonymous by design — `refresh` and `validate` receive the token in the body, not the `Authorization` header.
+- `PUT /profile` is the only `[Authorize]` endpoint. All others (`register`, `login`, `refresh`, `validate`, `logout`) are anonymous by design — `refresh` reads the refresh token from the cookie (not the `Authorization` header) and `validate` receives the token in the body. `logout` reads the refresh cookie to know which token to revoke.
 - `LoginUserDTO.Identifier` is intentionally a single field that accepts either email or `NombreUsuario`. If you need to distinguish them in the future, add a separate `loginBy` enum or a new endpoint rather than splitting the field.
 - `AuthService` instantiates its own `PasswordHasher<Usuario>` (mirroring `MappersProfile`). If you want a single hasher instance, register `IPasswordHasher<Usuario>` in `Program.cs` and inject it — but keep the same hashing options, otherwise hashes written by `MappersProfile` will not verify.
-- `register` and `login` both return the same `(accessToken, refreshToken, refreshTokenExpiration)` shape. They are typed as `RegisterResultDTO` and `LoginResultDTO` for semantic clarity; do not collapse them into one type without a deliberate refactor.
+- `register` and `login` both return the same `(accessToken, refreshToken, refreshTokenExpiration)` shape **and** set the same cookies. They are typed as `RegisterResultDTO` and `LoginResultDTO` for semantic clarity; do not collapse them into one type without a deliberate refactor.
+- The cookies set by `register`/`login`/`refresh` and the tokens returned in the body share the same JWT / refresh-token values. Cookies are the transport for browsers; the body fields exist for non-browser clients that cannot use cookies. Do not drop the body fields without coordinating with the front-end and any non-browser clients.

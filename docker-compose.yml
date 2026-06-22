@@ -36,6 +36,10 @@ services:
       JwtSettings__Audience: ${JWT_AUDIENCE:-SideCar.Auth.Clients}
       JwtSettings__AccessTokenExpirationInMinutes: ${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:-15}
       JwtSettings__RefreshTokenExpirationInDays: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:-7}
+      JwtSettings__AuthCookieName: ${AUTH_COOKIE_NAME:-chat_auth}
+      JwtSettings__RefreshCookieName: ${REFRESH_COOKIE_NAME:-chat_refresh}
+      JwtSettings__CookieSameSite: ${COOKIE_SAME_SITE:-Lax}
+      JwtSettings__CookieSecureOnly: ${COOKIE_SECURE_ONLY:-true}
     networks:
       - internal
 
