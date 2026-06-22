@@ -83,6 +83,9 @@ namespace SideCar.Auth.Api.Controllers
             var result = _tokenService.ValidateToken(request.Data.Token);
             if (result.Valid)
             {
+                Response.Headers["X-User-Id"] = result.UserId?.ToString() ?? string.Empty;
+                Response.Headers["X-Username"] = result.Username ?? string.Empty;
+                Response.Headers["X-Email"] = result.Email ?? string.Empty;
                 return Ok(MsResponse<ValidateTokenResponseDTO>.Ok(result));
             }
             return Unauthorized(MsResponse<ValidateTokenResponseDTO>.Fail(result.Reason ?? "Invalid token", "Token inválido"));
