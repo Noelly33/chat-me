@@ -7,7 +7,7 @@ on:
 
 env:
   DOTNET_VERSION: "10.0.x"
-  NODE_VERSION: "22.x"
+  NODE_VERSION: "24.x"
 
 jobs:
   build:
@@ -17,10 +17,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore SideCar.Auth.Api
         run: dotnet restore SideCar.Auth.Api/SideCar.Auth.Api/SideCar.Auth.Api.csproj
