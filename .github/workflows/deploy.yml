@@ -65,6 +65,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - run: dotnet restore SideCar.Auth.Api/SideCar.Auth.Api/SideCar.Auth.Api.csproj
+      - run: dotnet restore Consumer.Messaging.Worker/Consumer.Messaging.Worker/Consumer.Messaging.Worker.csproj
+        
+
       - name: Install/update dotnet-ef
         run: dotnet tool update --global dotnet-ef --version 10.*
 
