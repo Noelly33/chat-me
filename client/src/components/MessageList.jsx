@@ -1,48 +1,35 @@
 import { useEffect, useRef } from "react";
+import MessageBubble from "./MessageBubble.jsx";
 
-function formatTime(iso) {
-  try {
-    return new Date(iso).toLocaleTimeString("es-EC", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "";
-  }
-}
-
-export default function MessageList({ messages, currentUser }) {
-  const endRef = useRef(null);
+export default function MessageList({ messages, typingUsers }) {
+  const containerRef = useRef(null);
+  const wasAtBottomRef = useRef(true);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = containerRef.current;
+    if (!el) return;
+    const lastMessage = messages[messages.length - 1];
+    if (wasAtBottomRef.current || lastMessage?.mine) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [messages]);
 
-  return (
-    <div className="messages">
-      {messages.map((msg) => {
-        if (msg.type === "system") {
-          return (
-            <div key={msg.id} className="system-message">
-              {msg.text}
-            </div>
-          );
-        }
+  function handleScroll() {
+    const el = containerRef.current;
+    if (!el) return;
+    wasAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }
 
-        const mine = msg.username === currentUser;
-        return (
-          <div key={msg.id} className={`message ${mine ? "mine" : ""}`}>
-            <div className="message-meta">
-              <span className="message-author">
-                {mine ? "Tú" : msg.username}
-              </span>
-              <span className="message-time">{formatTime(msg.timestamp)}</span>
-            </div>
-            <div className="message-text">{msg.text}</div>
-          </div>
-        );
-      })}
-      <div ref={endRef} />
-    </div>
+  return (
+    <>
+      <div className="messages" ref={containerRef} onScroll={handleScroll}>
+        {messages.map((message) => (
+          <MessageBubble key={message.id} message={message} />
+        ))}
+      </div>
+      <div className="typing-indicator">
+        {typingUsers.length > 0 ? `${typingUsers.join(", ")} escribiendo…` : ""}
+      </div>
+    </>
   );
 }

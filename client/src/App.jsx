@@ -1,34 +1,22 @@
-import { useState } from "react";
-import Login from "./components/Login.jsx";
-import Chat from "./components/Chat.jsx";
-
-const STORAGE_KEY = "chatme-auth";
-
-function loadAuth() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
+import { useAuth } from "./hooks/useAuth.js";
+import { AppProvider } from "./context/AppContext.jsx";
+import Login from "./routes/Login.jsx";
+import Chat from "./routes/Chat.jsx";
 
 export default function App() {
-  const [auth, setAuth] = useState(loadAuth);
+  const auth = useAuth();
 
-  function handleAuth(data) {
-    setAuth(data);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  if (auth.booting) {
+    return <div className="auth-container">Cargando…</div>;
   }
 
-  function handleLogout() {
-    setAuth(null);
-    localStorage.removeItem(STORAGE_KEY);
+  if (!auth.user) {
+    return <Login onLogin={auth.login} onRegister={auth.register} />;
   }
 
-  if (!auth) {
-    return <Login onAuth={handleAuth} />;
-  }
-
-  return <Chat auth={auth} onLogout={handleLogout} />;
+  return (
+    <AppProvider auth={auth}>
+      <Chat user={auth.user} onLogout={auth.logout} />
+    </AppProvider>
+  );
 }
