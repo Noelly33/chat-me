@@ -75,13 +75,13 @@ jobs:
       - name: Add dotnet tools to PATH
         run: echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
-      - name: Migrate SideCar.Auth.Api database
-        working-directory: SideCar.Auth.Api/SideCar.Auth.Api
-        run: dotnet ef database update --connection "${{ secrets.POSTGRES_CONNECTION }}"
+      # - name: Migrate SideCar.Auth.Api database
+      #   working-directory: SideCar.Auth.Api/SideCar.Auth.Api
+      #   run: dotnet ef database update --connection "${{ secrets.POSTGRES_CONNECTION }}"
 
-      - name: Migrate Consumer.Messaging.Worker database
-        working-directory: Consumer.Messaging.Worker/Consumer.Messaging.Worker
-        run: dotnet ef database update --connection "${{ secrets.POSTGRES_CONNECTION }}"
+      # - name: Migrate Consumer.Messaging.Worker database
+      #   working-directory: Consumer.Messaging.Worker/Consumer.Messaging.Worker
+      #   run: dotnet ef database update --connection "${{ secrets.POSTGRES_CONNECTION }}"
 
   deploy:
     name: Build images and deploy via Docker Compose
