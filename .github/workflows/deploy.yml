@@ -7,11 +7,12 @@ on:
 
 env:
   DOTNET_VERSION: "10.0.x"
+  NODE_VERSION: "22.x"
 
 jobs:
   build:
-    name: Build .NET projects
-    runs-on: self-hosted
+    name: Build all projects
+    runs-on: [self-hosted, linux]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,16 +28,43 @@ jobs:
       - name: Build SideCar.Auth.Api
         run: dotnet build SideCar.Auth.Api/SideCar.Auth.Api/SideCar.Auth.Api.csproj -c Release --no-restore
 
+      - name: Restore Core.Mensajes.Api
+        run: dotnet restore Core.Mensajes.Api/Core.Mensajes.Api/Core.Mensajes.Api.csproj
+
+      - name: Build Core.Mensajes.Api
+        run: dotnet build Core.Mensajes.Api/Core.Mensajes.Api/Core.Mensajes.Api.csproj -c Release --no-restore
+
       - name: Restore Consumer.Messaging.Worker
         run: dotnet restore Consumer.Messaging.Worker/Consumer.Messaging.Worker/Consumer.Messaging.Worker.csproj
 
       - name: Build Consumer.Messaging.Worker
         run: dotnet build Consumer.Messaging.Worker/Consumer.Messaging.Worker/Consumer.Messaging.Worker.csproj -c Release --no-restore
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install websocket-server dependencies
+        working-directory: websocket-server
+        run: npm ci
+
+      - name: Build websocket-server
+        working-directory: websocket-server
+        run: npm run build
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Build client
+        working-directory: client
+        run: npm run build
+
   migrate:
     name: Apply EF Core migrations
     needs: build
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,7 +91,7 @@ jobs:
   deploy:
     name: Build images and deploy via Docker Compose
     needs: migrate
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
