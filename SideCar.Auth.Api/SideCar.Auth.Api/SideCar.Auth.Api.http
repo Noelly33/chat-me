@@ -1,0 +1,101 @@
+@SideCar.Auth.Api_HostAddress = http://localhost:5000
+@accessToken = {{register.response.body.data.token}}
+@refreshToken = {{register.response.body.data.refreshToken}}
+@userId = {{register.response.body.data.email}}
+
+### Register
+# @name register
+POST {{SideCar.Auth.Api_HostAddress}}/api/v1/auth/register
+Accept: application/json
+Content-Type: application/json
+
+{
+  "Header": {
+    "TransactionId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+    "Timestamp": "2026-06-12T21:21:00Z",
+    "Device": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) WebKit/537.36"
+  },
+  "Data": {
+    "Nombres": "Juan Carlos",
+    "Apellidos": "Pérez Gómez",
+    "NumeroTelefono": "987654321",
+    "Password": "PasswordSeguro123!",
+    "Email": "juan.perez1@example.com",
+    "FechaNacimiento": "1995-08-25T00:00:00Z",
+    "NombreUsuario": "juanpi95"
+  }
+}
+
+### Login (Identifier acepta email o NombreUsuario)
+# @name login
+POST {{SideCar.Auth.Api_HostAddress}}/api/v1/auth/login
+Accept: application/json
+Content-Type: application/json
+
+{
+  "Header": {
+    "TransactionId": "44444444-5555-6666-7777-888888888888",
+    "Timestamp": "2026-06-14T00:00:00Z",
+    "Device": "web-client"
+  },
+  "Data": {
+    "Identifier": "juan.perez@example.com",
+    "Password": "PasswordSeguro123!"
+  }
+}
+
+### Refresh token (lee la cookie chat_refresh; body opcional)
+POST {{SideCar.Auth.Api_HostAddress}}/api/v1/auth/refresh
+Accept: application/json
+Content-Type: application/json
+
+{
+  "Header": {
+    "TransactionId": "11111111-2222-3333-4444-555555555555",
+    "Timestamp": "2026-06-14T00:00:00Z",
+    "Device": "nginx-auth"
+  },
+  "Data": {
+    "RefreshToken": "{{refreshToken}}"
+  }
+}
+
+### Validate token (used by nginx auth_request and other microservices)
+POST {{SideCar.Auth.Api_HostAddress}}/api/v1/auth/validate
+Accept: application/json
+Content-Type: application/json
+
+{
+  "Header": {
+    "TransactionId": "22222222-3333-4444-5555-666666666666",
+    "Timestamp": "2026-06-14T00:00:00Z",
+    "Device": "nginx-gateway"
+  },
+  "Data": {
+    "Token": "{{accessToken}}"
+  }
+}
+
+### Update profile (lee el JWT de la cookie chat_auth o del header Authorization)
+PUT {{SideCar.Auth.Api_HostAddress}}/api/v1/auth/profile
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "Header": {
+    "TransactionId": "33333333-4444-5555-6666-777777777777",
+    "Timestamp": "2026-06-14T00:00:00Z",
+    "Device": "web-client"
+  },
+  "Data": {
+    "Nombres": "Juan Carlos",
+    "Apellidos": "Pérez Gómez",
+    "NumeroTelefono": "+51987654321",
+    "AvatarUrl": "https://cdn.example.com/avatars/juanpi95.png"
+  }
+}
+
+### Logout (revoca la cookie chat_refresh y limpia ambas cookies de auth)
+POST {{SideCar.Auth.Api_HostAddress}}/api/v1/auth/logout
+Accept: application/json

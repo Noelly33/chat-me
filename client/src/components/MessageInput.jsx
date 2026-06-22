@@ -1,29 +1,34 @@
 import { useState } from "react";
 
-export default function MessageInput({ onSend, onTyping, disabled }) {
+export default function MessageInput({ disabled, onSend, onTyping }) {
   const [text, setText] = useState("");
 
   function handleSubmit(e) {
     e.preventDefault();
-    const value = text.trim();
-    if (!value) return;
-    onSend(value);
+    if (!text.trim()) return;
+    onSend(text);
     setText("");
   }
 
-  function handleChange(e) {
-    setText(e.target.value);
-    if (e.target.value) onTyping();
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
   }
 
   return (
     <form className="composer" onSubmit={handleSubmit}>
       <input
         type="text"
+        placeholder={disabled ? "Esperando conexión…" : "Escribí un mensaje"}
         value={text}
-        onChange={handleChange}
-        placeholder={disabled ? "Conectando..." : "Escribe un mensaje..."}
         disabled={disabled}
+        onChange={(e) => {
+          setText(e.target.value);
+          onTyping();
+        }}
+        onKeyDown={handleKeyDown}
         autoComplete="off"
       />
       <button type="submit" disabled={disabled || !text.trim()}>
