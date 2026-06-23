@@ -1,8 +1,6 @@
-const API_BASE_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
-
-const AUTH_PREFIX = `${API_BASE_URL}/api/v1/auth`;
-const MESSAGES_PATH = `${API_BASE_URL}/api/v1/messages`;
-const CONTACTS_PATH = `${API_BASE_URL}/api/v1/contacts`;
+const AUTH_PREFIX = "/api/v1/auth";
+const MESSAGES_PATH = "/api/v1/messages";
+const CONTACTS_PATH = "/api/v1/contacts";
 
 export class ApiError extends Error {
   constructor(message, errors = [], status = 0) {

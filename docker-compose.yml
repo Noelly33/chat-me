@@ -122,6 +122,13 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  frontend:
+    build:
+      context: ./client
+    restart: unless-stopped
+    networks:
+      - internal
+
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped
@@ -132,6 +139,7 @@ services:
     networks:
       - internal
     depends_on:
+      - frontend
       - sidecar-auth-api
       - core-mensajes-api
       - ws-node-1
