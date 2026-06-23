@@ -1,6 +1,17 @@
+const API_BASE_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
+
+function resolveWsUrl() {
+  if (API_BASE_URL) {
+    const url = new URL(API_BASE_URL);
+    const scheme = url.protocol === "https:" ? "wss:" : "ws:";
+    return `${scheme}//${url.host}/ws`;
+  }
+  const scheme = location.protocol === "https:" ? "wss:" : "ws:";
+  return `${scheme}//${location.host}/ws`;
+}
+
 export function createSocket() {
-  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  const socket = new WebSocket(`${protocol}//${location.host}/ws`);
+  const socket = new WebSocket(resolveWsUrl());
 
   const listeners = new Map();
 
