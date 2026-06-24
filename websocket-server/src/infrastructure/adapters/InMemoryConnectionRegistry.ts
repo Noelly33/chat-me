@@ -20,6 +20,10 @@ export class InMemoryConnectionRegistry implements ConnectionRegistry {
     }
   }
 
+  count(): number {
+    return this.connections.size
+  }
+
   getUsername(sessionId: string): string | undefined {
     return this.connections.get(sessionId)?.username
   }

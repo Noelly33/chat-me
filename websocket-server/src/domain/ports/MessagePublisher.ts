@@ -4,6 +4,7 @@ export interface MensajeEnviadoPayload {
   EmisorId: string
   Contenido: string
   TipoMensajeCodigo: string
+  _seq?: number
 }
 
 export interface IniciarChatIndividualPayload {
@@ -12,12 +13,14 @@ export interface IniciarChatIndividualPayload {
   ReceptorId: string
   Contenido: string
   TipoMensajeCodigo: string
+  _seq?: number
 }
 
 export interface ChatLeidoPayload {
   ConversacionId: string
   UsuarioId: string
   LeidoAt: string
+  _seq?: number
 }
 
 export interface MessagePublisher {

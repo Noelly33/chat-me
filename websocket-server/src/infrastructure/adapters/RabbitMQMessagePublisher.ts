@@ -1,6 +1,7 @@
 import amqp, { type Channel, type ChannelModel } from 'amqplib'
 import { randomUUID } from 'node:crypto'
 import type { MessagePublisher, MensajeEnviadoPayload, IniciarChatIndividualPayload, ChatLeidoPayload } from '../../domain/ports/MessagePublisher.js'
+import { log } from '../logging/logger.js'
 
 const NAMESPACE = 'Consumer.Messaging.Worker.Domain.Events'
 
@@ -58,17 +59,29 @@ export class RabbitMQMessagePublisher implements MessagePublisher {
 
   async publishMensajeEnviado(payload: MensajeEnviadoPayload): Promise<void> {
     const exchange = EXCHANGES.mensajeEnviado
-    this.channel.publish(exchange, '', buildEnvelope(exchange, payload))
+    const ok = this.channel.publish(exchange, '', buildEnvelope(exchange, payload))
+    log(payload._seq ?? 0, ok ? '✓ RABBIT_PUB_OK' : '✗ RABBIT_PUB_BACKPRESSURE', {
+      exchange,
+      id: payload.MensajeId,
+    })
   }
 
   async publishIniciarChatIndividual(payload: IniciarChatIndividualPayload): Promise<void> {
     const exchange = EXCHANGES.iniciarChatIndividual
-    this.channel.publish(exchange, '', buildEnvelope(exchange, payload))
+    const ok = this.channel.publish(exchange, '', buildEnvelope(exchange, payload))
+    log(payload._seq ?? 0, ok ? '✓ RABBIT_PUB_OK' : '✗ RABBIT_PUB_BACKPRESSURE', {
+      exchange,
+      id: payload.MensajeId,
+    })
   }
 
   async publishChatLeido(payload: ChatLeidoPayload): Promise<void> {
     const exchange = EXCHANGES.chatLeido
-    this.channel.publish(exchange, '', buildEnvelope(exchange, payload))
+    const ok = this.channel.publish(exchange, '', buildEnvelope(exchange, payload))
+    log(payload._seq ?? 0, ok ? '✓ RABBIT_PUB_OK' : '✗ RABBIT_PUB_BACKPRESSURE', {
+      exchange,
+      conversacion: payload.ConversacionId,
+    })
   }
 
   async close(): Promise<void> {
