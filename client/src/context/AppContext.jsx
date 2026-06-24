@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useReducer } from "react";
 import { useWebSocket } from "../hooks/useWebSocket.js";
+import { uuid } from "../utils/uuid.js";
 
 const AppContext = createContext(null);
 
@@ -142,7 +143,7 @@ export function AppProvider({ children, auth }) {
     (otroUsuario, text) => {
       if (!otroUsuario?.id || !text.trim() || !me) return;
       const key = otroUsuario.nombreUsuario;
-      const id = crypto.randomUUID();
+      const id = uuid();
       const timestamp = new Date().toISOString();
       dispatch({ type: "OPEN_CONVERSATION", contact: otroUsuario });
       dispatch({ type: "SEND_MESSAGE", key, message: { id, username: me, text, timestamp, mine: true } });
