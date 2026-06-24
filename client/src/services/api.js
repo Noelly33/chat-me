@@ -105,6 +105,13 @@ export function getContactById(id) {
   return authFetch(`${CONTACTS_PATH}/${id}`, { method: "GET" });
 }
 
+export function searchUsers(query, { size = 20 } = {}) {
+  return authFetch(
+    `${CONTACTS_PATH}/search?query=${encodeURIComponent(query)}&size=${size}`,
+    { method: "GET" },
+  );
+}
+
 export function getMessages({ conversationId, page = 1, size = 50 }) {
   return authFetch(
     `${MESSAGES_PATH}?conversationId=${conversationId}&page=${page}&size=${size}`,

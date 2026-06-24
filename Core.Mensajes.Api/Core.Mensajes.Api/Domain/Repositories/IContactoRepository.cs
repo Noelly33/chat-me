@@ -10,5 +10,7 @@ namespace Core.Mensajes.Api.Domain.Repositories
         Task<Usuario> GetContactById(Guid userId);
 
         Task<int> GetTotalContactos(Guid userId);
+
+        Task<List<ContactoResponseDTO>> SearchUsersByUsername(string query, Guid currentUserId, int maxResults);
     }
 }

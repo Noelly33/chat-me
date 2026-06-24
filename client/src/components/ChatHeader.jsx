@@ -2,7 +2,7 @@ export default function ChatHeader({ conversation, online, right }) {
   if (!conversation) {
     return (
       <div className="chat-topbar">
-        <h2>Seleccioná una conversación</h2>
+        <h2>Selecciona una conversación</h2>
         {right}
       </div>
     );

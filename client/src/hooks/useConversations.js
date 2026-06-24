@@ -1,17 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAppContext } from "../context/AppContext.jsx";
 import * as api from "../services/api.js";
 
 export function useConversations() {
   const { conversationList, activeKey, selectConversation, setContacts, sendMessage } =
     useAppContext();
-  const [contacts, setLocalContacts] = useState([]);
 
   useEffect(() => {
     api
       .getContacts({ page: 1, size: 10 })
       .then((data) => {
-        setLocalContacts(data.data);
         setContacts(data.data);
       })
       .catch(() => {});
@@ -32,7 +30,6 @@ export function useConversations() {
   return {
     conversations: conversationList,
     activeConversation,
-    contacts,
     selectConversation,
     openContact,
   };

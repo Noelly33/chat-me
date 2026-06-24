@@ -68,5 +68,27 @@ namespace Core.Mensajes.Api.Application
                 }
             };
         }
+
+        public async Task<MsResponse<List<ContactoResponseDTO>>> SearchUsuarios(Guid currentUserId, string query, int maxResults)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return new MsResponse<List<ContactoResponseDTO>>
+                {
+                    Success = true,
+                    Data = new List<ContactoResponseDTO>()
+                };
+            }
+
+            if (maxResults < 1 || maxResults > 50) maxResults = 20;
+
+            var usuarios = await contactoRepository.SearchUsersByUsername(query, currentUserId, maxResults);
+
+            return new MsResponse<List<ContactoResponseDTO>>
+            {
+                Success = true,
+                Data = usuarios
+            };
+        }
     }
 }

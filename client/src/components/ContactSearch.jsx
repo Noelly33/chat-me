@@ -1,20 +1,39 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import * as api from "../services/api.js";
 
-export default function ContactSearch({ contacts, onSelect }) {
+export default function ContactSearch({ onSelect }) {
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const id = setTimeout(() => setDebounced(query.trim().toLowerCase()), 300);
+    const id = setTimeout(() => setDebounced(query.trim()), 300);
     return () => clearTimeout(id);
   }, [query]);
 
-  const filtered = useMemo(() => {
-    if (!debounced) return [];
-    return contacts.filter((c) =>
-      `${c.nombreUsuario} ${c.nombres} ${c.apellidos}`.toLowerCase().includes(debounced),
-    );
-  }, [contacts, debounced]);
+  useEffect(() => {
+    if (!debounced) {
+      setResults([]);
+      return undefined;
+    }
+    let cancelled = false;
+    setLoading(true);
+    api
+      .searchUsers(debounced)
+      .then((data) => {
+        if (!cancelled) setResults(data ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setResults([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [debounced]);
 
   return (
     <div style={{ position: "relative", marginBottom: "1rem" }}>
@@ -33,23 +52,29 @@ export default function ContactSearch({ contacts, onSelect }) {
       />
       {debounced && (
         <ul className="user-list" style={{ marginTop: "0.5rem" }}>
-          {filtered.length === 0 && (
+          {loading && (
+            <li className="user-name" style={{ padding: "0.5rem 0.6rem" }}>
+              Buscando…
+            </li>
+          )}
+          {!loading && results.length === 0 && (
             <li className="user-name" style={{ padding: "0.5rem 0.6rem" }}>
               Sin resultados
             </li>
           )}
-          {filtered.map((contact) => (
+          {results.map((user) => (
             <li
-              key={contact.id}
+              key={user.id}
               className="user-item"
               style={{ cursor: "pointer" }}
               onClick={() => {
-                onSelect(contact);
+                onSelect(user);
                 setQuery("");
+                setResults([]);
               }}
             >
               <span className="user-name">
-                {contact.nombres} {contact.apellidos} (@{contact.nombreUsuario})
+                {user.nombres} {user.apellidos} (@{user.nombreUsuario})
               </span>
             </li>
           ))}

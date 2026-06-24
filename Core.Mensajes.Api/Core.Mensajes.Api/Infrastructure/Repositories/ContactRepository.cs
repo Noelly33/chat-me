@@ -95,5 +95,38 @@ namespace Core.Mensajes.Api.Infrastructure.Repositories
             return await _context.Usuarios.FindAsync(userId);
 
         }
+
+        public async Task<List<ContactoResponseDTO>> SearchUsersByUsername(string query, Guid currentUserId, int maxResults)
+        {
+            if (string.IsNullOrWhiteSpace(query) || maxResults <= 0)
+            {
+                return new List<ContactoResponseDTO>();
+            }
+
+            var pattern = $"%{query.Trim()}%";
+
+            var usuarios = await _context.Usuarios
+                .Where(u => u.Id != currentUserId &&
+                           (EF.Functions.ILike(u.NombreUsuario, pattern) ||
+                            EF.Functions.ILike(u.Nombres, pattern) ||
+                            EF.Functions.ILike(u.Apellidos, pattern)))
+                .OrderBy(u => u.NombreUsuario)
+                .Take(maxResults)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return usuarios.Select(u => new ContactoResponseDTO
+            {
+                Id = u.Id,
+                NombreUsuario = u.NombreUsuario,
+                Email = u.Email,
+                Nombres = u.Nombres,
+                Apellidos = u.Apellidos,
+                FechaNacimiento = u.FechaNacimiento,
+                NumeroTelefono = u.NumeroTelefono,
+                AvatarUrl = u.AvatarUrl,
+                CreadoAt = u.CreadoAt,
+            }).ToList();
+        }
     }
 }

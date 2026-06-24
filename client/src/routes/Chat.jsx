@@ -11,7 +11,7 @@ import ConnectionStatus from "../components/ConnectionStatus.jsx";
 
 export default function Chat({ user, onLogout }) {
   const { online, typingUsers, wsStatus } = useAppContext();
-  const { conversations, activeConversation, contacts, selectConversation, openContact } =
+  const { conversations, activeConversation, selectConversation, openContact } =
     useConversations();
   const { messages, sendMessage, notifyTyping } = useMessages(activeConversation);
 
@@ -31,7 +31,7 @@ export default function Chat({ user, onLogout }) {
           </div>
         </div>
 
-        <ContactSearch contacts={contacts} onSelect={openContact} />
+        <ContactSearch onSelect={openContact} />
 
         <div className="online-title">Conversaciones</div>
         <ConversationList

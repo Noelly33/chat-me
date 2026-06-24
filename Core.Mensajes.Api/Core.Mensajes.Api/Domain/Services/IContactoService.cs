@@ -8,5 +8,7 @@ namespace Core.Mensajes.Api.Domain.Services
         Task<MsResponse<PagedResponse<ContactoListadoDTO>>> GetContactos(Guid userId, int pageNumber, int pageSize);
 
         Task<MsResponse<ContactoResponseDTO>> GetContactoById(Guid userId);
+
+        Task<MsResponse<List<ContactoResponseDTO>>> SearchUsuarios(Guid currentUserId, string query, int maxResults);
     }
 }

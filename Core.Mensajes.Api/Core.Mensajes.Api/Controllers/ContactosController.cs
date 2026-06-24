@@ -51,5 +51,30 @@ namespace Core.Mensajes.Api.Controllers
 
             return Ok(result);
         }
+
+        [HttpGet("search")]
+        public async Task<ActionResult<MsResponse<List<ContactoResponseDTO>>>> Search(
+            [FromHeader(Name = "x-user-id")] string userId,
+            [FromQuery] string query,
+            [FromQuery] string size)
+        {
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out _))
+            {
+                return BadRequest(MsResponse<List<ContactoResponseDTO>>.Fail("User ID is required and must be a valid GUID"));
+            }
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return BadRequest(MsResponse<List<ContactoResponseDTO>>.Fail("Query is required"));
+            }
+
+            int maxResults = 20;
+            if (!string.IsNullOrEmpty(size) && int.TryParse(size, out var parsed) && parsed > 0)
+            {
+                maxResults = parsed;
+            }
+
+            var result = await contactoService.SearchUsuarios(Guid.Parse(userId), query, maxResults);
+            return Ok(result);
+        }
     }
 }
