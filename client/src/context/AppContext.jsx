@@ -14,6 +14,7 @@ const initialState = {
 
 function upsertConversation(state, key, patch) {
   const existing = state.conversations[key] ?? {
+    id: null,
     otroUsuario: { nombreUsuario: key },
     mensajes: [],
     ultimoMensaje: null,
@@ -32,6 +33,22 @@ function reducer(state, action) {
   switch (action.type) {
     case "SET_ONLINE":
       return { ...state, online: action.usernames };
+
+    case "SET_CONVERSATIONS": {
+      const conversations = { ...state.conversations };
+      for (const c of action.conversations) {
+        const key = c.otroUsuario.nombreUsuario;
+        const existing = conversations[key];
+        conversations[key] = {
+          id: c.id,
+          otroUsuario: c.otroUsuario,
+          mensajes: existing?.mensajes ?? [],
+          ultimoMensaje: c.ultimoMensaje ?? existing?.ultimoMensaje ?? null,
+          noLeidos: existing?.noLeidos ?? 0,
+        };
+      }
+      return { ...state, conversations };
+    }
 
     case "SET_CONTACTS": {
       const contactsByUsername = { ...state.contactsByUsername };
@@ -135,19 +152,29 @@ export function AppProvider({ children, auth }) {
 
   const setContacts = useCallback((contacts) => dispatch({ type: "SET_CONTACTS", contacts }), []);
 
+  const setConversations = useCallback(
+    (conversations) => dispatch({ type: "SET_CONVERSATIONS", conversations }),
+    [],
+  );
+
   const selectConversation = useCallback((key) => {
     dispatch({ type: "SELECT_CONVERSATION", key });
   }, []);
 
   const sendMessage = useCallback(
-    (otroUsuario, text) => {
-      if (!otroUsuario?.id || !text.trim() || !me) return;
+    (conversation, text) => {
+      if (!conversation?.otroUsuario?.id || !text.trim() || !me) return;
+      const otroUsuario = conversation.otroUsuario;
       const key = otroUsuario.nombreUsuario;
       const id = uuid();
       const timestamp = new Date().toISOString();
       dispatch({ type: "OPEN_CONVERSATION", contact: otroUsuario });
       dispatch({ type: "SEND_MESSAGE", key, message: { id, username: me, text, timestamp, mine: true } });
-      ws.sendIniciarIndividual(otroUsuario.id, text);
+      if (conversation.id) {
+        ws.sendMessage(conversation.id, text);
+      } else {
+        ws.sendIniciarIndividual(otroUsuario.id, text);
+      }
     },
     [me, ws],
   );
@@ -168,6 +195,7 @@ export function AppProvider({ children, auth }) {
     wsStatus: ws.status,
     sendTyping: ws.sendTyping,
     setContacts,
+    setConversations,
     selectConversation,
     sendMessage,
   };

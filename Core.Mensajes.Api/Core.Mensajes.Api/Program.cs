@@ -18,6 +18,8 @@ builder.Services.AddDbContext<ChatDbContext>(options =>
 
 builder.Services.AddScoped<IContactoRepository, ContactRepository>();
 builder.Services.AddScoped<IContactoService, ContactoService>();
+builder.Services.AddScoped<IConversacionRepository, ConversacionRepository>();
+builder.Services.AddScoped<IConversacionService, ConversacionService>();
 builder.Services.AddScoped<IMessageRepository, MensajesRepository>();
 builder.Services.AddScoped<IMessagesService, MessageService>();
 

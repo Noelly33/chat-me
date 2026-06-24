@@ -11,7 +11,7 @@ export function useMessages(conversation) {
 
   function send(text) {
     if (!conversation || !text.trim()) return;
-    sendMessage(conversation.otroUsuario, text.trim());
+    sendMessage(conversation, text.trim());
     clearTimeout(typingTimeoutRef.current);
     sendTyping(false);
   }

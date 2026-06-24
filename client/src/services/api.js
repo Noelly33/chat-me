@@ -1,6 +1,7 @@
 const AUTH_PREFIX = "/api/v1/auth";
 const MESSAGES_PATH = "/api/v1/messages";
 const CONTACTS_PATH = "/api/v1/contacts";
+const CONVERSATIONS_PATH = "/api/v1/conversations";
 
 export class ApiError extends Error {
   constructor(message, errors = [], status = 0) {
@@ -117,6 +118,10 @@ export function getMessages({ conversationId, page = 1, size = 50 }) {
     `${MESSAGES_PATH}?conversationId=${conversationId}&page=${page}&size=${size}`,
     { method: "GET" },
   );
+}
+
+export function getConversations() {
+  return authFetch(CONVERSATIONS_PATH, { method: "GET" });
 }
 
 // No existe GET /api/v1/auth/profile en el backend (solo PUT). Los endpoints
