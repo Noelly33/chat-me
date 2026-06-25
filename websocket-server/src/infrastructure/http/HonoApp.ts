@@ -9,7 +9,7 @@ import type { ChatService } from '../../domain/ports/ChatService.js'
 function toClientPayload(event: ChatEvent): object {
   switch (event.type) {
     case 'chat:message':
-      return { type: 'chat:message', payload: { id: event.id, username: event.username, text: event.text, timestamp: event.timestamp } }
+      return { type: 'chat:message', payload: { id: event.id, username: event.username, senderId: event.senderId, text: event.text, timestamp: event.timestamp } }
     case 'chat:typing':
       return { type: 'chat:typing', payload: { username: event.username, isTyping: event.isTyping } }
     case 'user:joined':

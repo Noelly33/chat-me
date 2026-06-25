@@ -90,7 +90,7 @@ function reducer(state, action) {
     }
 
     case "RECEIVE_MESSAGE": {
-      const { id, username, text, timestamp } = action.message;
+      const { id, username, senderId, text, timestamp } = action.message;
       // Eco del propio mensaje (el broadcast incluye también al emisor): ya
       // se renderizó vía SEND_MESSAGE, así que se descarta. El payload de
       // chat:message no incluye conversacionId (ver follow-ups en README).
@@ -100,8 +100,8 @@ function reducer(state, action) {
       const existing = state.conversations[key];
       if (existing?.mensajes.some((m) => m.id === id)) return state;
 
-      const otroUsuario =
-        existing?.otroUsuario ?? state.contactsByUsername[username] ?? { nombreUsuario: username };
+      const otroUsuario = existing?.otroUsuario ??
+        state.contactsByUsername[username] ?? { nombreUsuario: username, id: senderId };
 
       const isActive = state.activeKey === key;
 
