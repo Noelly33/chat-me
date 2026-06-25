@@ -19,6 +19,7 @@ function upsertConversation(state, key, patch) {
     mensajes: [],
     ultimoMensaje: null,
     noLeidos: 0,
+    historyLoaded: false,
   };
   return {
     ...state,
@@ -112,6 +113,17 @@ function reducer(state, action) {
       });
     }
 
+    case "SET_MESSAGES": {
+      const existing = state.conversations[action.key];
+      if (!existing) return state;
+      const seen = new Set(action.messages.map((m) => m.id));
+      const pending = existing.mensajes.filter((m) => !seen.has(m.id));
+      return upsertConversation(state, action.key, {
+        mensajes: [...action.messages, ...pending],
+        historyLoaded: true,
+      });
+    }
+
     case "RECEIVE_SYSTEM_MESSAGE": {
       if (!state.activeKey) return state;
       const existing = state.conversations[state.activeKey];
@@ -161,6 +173,11 @@ export function AppProvider({ children, auth }) {
     dispatch({ type: "SELECT_CONVERSATION", key });
   }, []);
 
+  const setMessages = useCallback(
+    (key, messages) => dispatch({ type: "SET_MESSAGES", key, messages }),
+    [],
+  );
+
   const sendMessage = useCallback(
     (conversation, text) => {
       if (!conversation?.otroUsuario?.id || !text.trim() || !me) return;
@@ -191,12 +208,14 @@ export function AppProvider({ children, auth }) {
 
   const value = {
     ...state,
+    me,
     conversationList,
     wsStatus: ws.status,
     sendTyping: ws.sendTyping,
     setContacts,
     setConversations,
     selectConversation,
+    setMessages,
     sendMessage,
   };
 
