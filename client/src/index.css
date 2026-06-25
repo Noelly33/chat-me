@@ -171,6 +171,8 @@ input {
   display: flex;
   flex-direction: column;
   padding: 1.25rem;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .sidebar-brand {
@@ -209,8 +211,6 @@ input {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  overflow-y: auto;
-  flex: 1;
 }
 
 .user-item {

@@ -39,13 +39,15 @@ export function useMessages(conversation) {
     if (!conversation || !text.trim()) return;
     sendMessage(conversation, text.trim());
     clearTimeout(typingTimeoutRef.current);
-    sendTyping(false);
+    sendTyping(false, conversation.otroUsuario.nombreUsuario);
   }
 
   function notifyTyping() {
-    sendTyping(true);
+    if (!conversation) return;
+    const paraUsername = conversation.otroUsuario.nombreUsuario;
+    sendTyping(true, paraUsername);
     clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => sendTyping(false), TYPING_DEBOUNCE_MS);
+    typingTimeoutRef.current = setTimeout(() => sendTyping(false, paraUsername), TYPING_DEBOUNCE_MS);
   }
 
   return { messages, sendMessage: send, notifyTyping };

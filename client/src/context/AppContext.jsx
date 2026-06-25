@@ -127,7 +127,7 @@ function reducer(state, action) {
     case "RECEIVE_SYSTEM_MESSAGE": {
       if (!state.activeKey) return state;
       const existing = state.conversations[state.activeKey];
-      if (!existing) return state;
+      if (!existing || existing.otroUsuario.nombreUsuario !== action.message.username) return state;
       return upsertConversation(state, state.activeKey, {
         mensajes: [...existing.mensajes, { ...action.message, system: true }],
       });

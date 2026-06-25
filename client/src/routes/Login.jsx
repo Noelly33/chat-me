@@ -64,7 +64,7 @@ export default function Login({ onLogin, onRegister }) {
           </div>
         </div>
         <p className="auth-subtitle">
-          {tab === "login" ? "Iniciá sesión para continuar" : "Creá tu cuenta para empezar a chatear"}
+          {tab === "login" ? "Inicia sesión para continuar" : "Crea tu cuenta para empezar a chatear"}
         </p>
 
         {errors.length > 0 && (

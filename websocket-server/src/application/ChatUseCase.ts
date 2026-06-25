@@ -101,10 +101,15 @@ export class ChatUseCase implements ChatService {
 
     // ── chat:typing ─────────────────────────────────────────────────────────
     if (msg.type === 'chat:typing') {
+      const p = msg.payload as { isTyping?: unknown; paraUsername?: unknown } | null
+      const paraUsername = p?.paraUsername != null ? String(p.paraUsername) : null
+      if (!paraUsername) return
+
       await this.broker.publish({
         type: 'chat:typing',
         username,
-        isTyping: Boolean(msg.payload),
+        isTyping: Boolean(p?.isTyping),
+        to: [username, paraUsername],
       })
       return
     }

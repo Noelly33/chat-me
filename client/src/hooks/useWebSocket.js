@@ -68,7 +68,7 @@ export function useWebSocket({ enabled, onMessage, onTyping, onSystemMessage, on
       send("chat:message", { conversacionId, paraUsername, text }),
     sendIniciarIndividual: (receptorId, paraUsername, text) =>
       send("chat:iniciar_individual", { receptorId, paraUsername, text }),
-    sendTyping: (isTyping) => send("chat:typing", isTyping),
+    sendTyping: (isTyping, paraUsername) => send("chat:typing", { isTyping, paraUsername }),
     sendLeido: (conversacionId) => send("chat:leido", { conversacionId }),
   };
 }

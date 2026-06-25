@@ -13,9 +13,9 @@ function toClientPayload(event: ChatEvent): object {
     case 'chat:typing':
       return { type: 'chat:typing', payload: { username: event.username, isTyping: event.isTyping } }
     case 'user:joined':
-      return { type: 'system:message', payload: { id: `sys-${Date.now()}`, text: `${event.username} se ha unido al chat`, timestamp: event.timestamp } }
+      return { type: 'system:message', payload: { id: `sys-${Date.now()}`, username: event.username, text: `${event.username} se ha unido al chat`, timestamp: event.timestamp } }
     case 'user:left':
-      return { type: 'system:message', payload: { id: `sys-${Date.now()}`, text: `${event.username} ha salido del chat`, timestamp: event.timestamp } }
+      return { type: 'system:message', payload: { id: `sys-${Date.now()}`, username: event.username, text: `${event.username} ha salido del chat`, timestamp: event.timestamp } }
     case 'roster:updated':
       return { type: 'users:online', payload: event.users }
   }
