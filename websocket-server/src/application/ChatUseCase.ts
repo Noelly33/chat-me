@@ -39,12 +39,13 @@ export class ChatUseCase implements ChatService {
 
     // ── chat:message — message within an existing conversation ──────────────
     if (msg.type === 'chat:message') {
-      const p = msg.payload as { id?: unknown; conversacionId?: unknown; text?: unknown } | null
+      const p = msg.payload as { id?: unknown; conversacionId?: unknown; text?: unknown; paraUsername?: unknown } | null
       const text          = ((p?.text != null ? String(p.text) : '')).trim()
       const conversacionId = p?.conversacionId != null ? String(p.conversacionId) : null
+      const paraUsername   = p?.paraUsername != null ? String(p.paraUsername) : null
       const mensajeId     = p?.id != null ? String(p.id) : crypto.randomUUID()
 
-      if (!text || text.length > MAX_TEXT_LENGTH || !conversacionId) return
+      if (!text || text.length > MAX_TEXT_LENGTH || !conversacionId || !paraUsername) return
 
       await Promise.all([
         this.broker.publish({
@@ -53,6 +54,7 @@ export class ChatUseCase implements ChatService {
           username,
           text,
           timestamp: new Date().toISOString(),
+          to: [username, paraUsername],
         }),
         this.publisher.publishMensajeEnviado({
           MensajeId:        mensajeId,
@@ -67,12 +69,13 @@ export class ChatUseCase implements ChatService {
 
     // ── chat:iniciar_individual — first message, new 1-to-1 conversation ───
     if (msg.type === 'chat:iniciar_individual') {
-      const p = msg.payload as { id?: unknown; receptorId?: unknown; text?: unknown } | null
-      const text       = ((p?.text != null ? String(p.text) : '')).trim()
-      const receptorId = p?.receptorId != null ? String(p.receptorId) : null
-      const mensajeId  = p?.id != null ? String(p.id) : crypto.randomUUID()
+      const p = msg.payload as { id?: unknown; receptorId?: unknown; text?: unknown; paraUsername?: unknown } | null
+      const text        = ((p?.text != null ? String(p.text) : '')).trim()
+      const receptorId  = p?.receptorId != null ? String(p.receptorId) : null
+      const paraUsername = p?.paraUsername != null ? String(p.paraUsername) : null
+      const mensajeId   = p?.id != null ? String(p.id) : crypto.randomUUID()
 
-      if (!text || text.length > MAX_TEXT_LENGTH || !receptorId) return
+      if (!text || text.length > MAX_TEXT_LENGTH || !receptorId || !paraUsername) return
 
       await Promise.all([
         this.broker.publish({
@@ -81,6 +84,7 @@ export class ChatUseCase implements ChatService {
           username,
           text,
           timestamp: new Date().toISOString(),
+          to: [username, paraUsername],
         }),
         this.publisher.publishIniciarChatIndividual({
           MensajeId:        mensajeId,

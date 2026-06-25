@@ -20,6 +20,14 @@ export class InMemoryConnectionRegistry implements ConnectionRegistry {
     }
   }
 
+  sendToUsernames(usernames: string[], data: string): void {
+    const targets = new Set(usernames)
+    for (const { username, sender } of this.connections.values()) {
+      if (!targets.has(username)) continue
+      try { sender.send(data) } catch { /* connection already closed */ }
+    }
+  }
+
   count(): number {
     return this.connections.size
   }

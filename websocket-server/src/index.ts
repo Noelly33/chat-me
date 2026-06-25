@@ -27,13 +27,20 @@ const { app, injectWebSocket, toClientPayload } = buildApp(chatService, env.clie
 
 await broker.subscribe((event) => {
   const seq = event._seq ?? nextSeq()
-  const recipients = registry.count()
+  const payload = JSON.stringify(toClientPayload(event))
+  const to = 'to' in event ? event.to : undefined
+
   log(seq, '→ BROADCAST', {
     type: event.type,
-    recipients,
-    payload: JSON.stringify(toClientPayload(event)).length + 'B',
+    recipients: to ? to.join(',') : registry.count(),
+    payload: payload.length + 'B',
   })
-  registry.broadcast(JSON.stringify(toClientPayload(event)))
+
+  if (to) {
+    registry.sendToUsernames(to, payload)
+  } else {
+    registry.broadcast(payload)
+  }
 })
 
 log(nextSeq(), '✓ WS_NODE_READY', {

@@ -188,9 +188,9 @@ export function AppProvider({ children, auth }) {
       dispatch({ type: "OPEN_CONVERSATION", contact: otroUsuario });
       dispatch({ type: "SEND_MESSAGE", key, message: { id, username: me, text, timestamp, mine: true } });
       if (conversation.id) {
-        ws.sendMessage(conversation.id, text);
+        ws.sendMessage(conversation.id, otroUsuario.nombreUsuario, text);
       } else {
-        ws.sendIniciarIndividual(otroUsuario.id, text);
+        ws.sendIniciarIndividual(otroUsuario.id, otroUsuario.nombreUsuario, text);
       }
     },
     [me, ws],
