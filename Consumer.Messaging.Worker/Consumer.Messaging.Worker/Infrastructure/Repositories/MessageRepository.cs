@@ -151,53 +151,57 @@ namespace Consumer.Messaging.Worker.Infrastructure.Repositories
                         CreadoAt: nuevaConversacion.CreadoAt
                     ));
                     MessageLogger.Log(ev.Seq, "✓ NOTIF.PublishChatCreado", new() { { "chatId", chatId } });
+                }
 
-                    var yaExisteMensaje = await _context.Mensajes.AnyAsync(m => m.Id == ev.MensajeId);
-                    if (yaExisteMensaje)
-                    {
-                        MessageLogger.Log(ev.Seq, "✓ DB.MSG_EXISTS_SKIP", new() { { "msgId", ev.MensajeId } });
-                        await transaction.CommitAsync();
-                        MessageLogger.Log(ev.Seq, "✓ TX.COMMIT");
-                        MessageLogger.Log(ev.Seq, "✓ REPO.ProcesarNuevoChatUsuarioOnEvent_DONE");
-                        return;
-                    }
-
-                    var tipoMensaje = await _context.TiposMensaje.FirstOrDefaultAsync(t => t.Codigo == ev.TipoMensajeCodigo);
-                    int tipoId = tipoMensaje?.Id ?? 1;
-                    MessageLogger.Log(ev.Seq, "→ DB.LOOKUP_TIPO", new()
-                    {
-                        { "codigo", ev.TipoMensajeCodigo },
-                        { "tipoId", tipoId },
-                        { "found", tipoMensaje != null },
-                    });
-
-                    var nuevoMensaje = new Mensaje
-                    {
-                        Id = ev.MensajeId,
-                        ConversacionId = chatId,
-                        EmisorId = ev.EmisorId,
-                        TipoMensajeId = tipoId,
-                        Contenido = ev.Contenido,
-                        CreadoAt = DateTime.UtcNow
-                    };
-
-                    _context.Mensajes.Add(nuevoMensaje);
-                    await _context.SaveChangesAsync();
-                    MessageLogger.Log(ev.Seq, "✓ DB.INSERT_MSG_OK", new() { { "msgId", nuevoMensaje.Id } });
-
+                // Inserta el mensaje tanto si la conversación se acaba de crear como
+                // si ya existía — antes este bloque vivía solo dentro del `if` de
+                // arriba y el mensaje se perdía en silencio cuando la conversación
+                // ya existía.
+                var yaExisteMensaje = await _context.Mensajes.AnyAsync(m => m.Id == ev.MensajeId);
+                if (yaExisteMensaje)
+                {
+                    MessageLogger.Log(ev.Seq, "✓ DB.MSG_EXISTS_SKIP", new() { { "msgId", ev.MensajeId } });
                     await transaction.CommitAsync();
                     MessageLogger.Log(ev.Seq, "✓ TX.COMMIT");
-
-                    await _notificationRepository.PublicarNuevoMensajeAsync(new NuevoMensajeNotification(
-                        MensajeId: nuevoMensaje.Id,
-                        ConversacionId: chatId,
-                        EmisorId: nuevoMensaje.EmisorId,
-                        Contenido: nuevoMensaje.Contenido ?? string.Empty,
-                        TipoMensajeCodigo: ev.TipoMensajeCodigo,
-                        CreadoAt: nuevoMensaje.CreadoAt
-                    ));
-                    MessageLogger.Log(ev.Seq, "✓ NOTIF.PublishNuevoMensaje", new() { { "msgId", nuevoMensaje.Id } });
+                    MessageLogger.Log(ev.Seq, "✓ REPO.ProcesarNuevoChatUsuarioOnEvent_DONE");
+                    return;
                 }
+
+                var tipoMensaje = await _context.TiposMensaje.FirstOrDefaultAsync(t => t.Codigo == ev.TipoMensajeCodigo);
+                int tipoId = tipoMensaje?.Id ?? 1;
+                MessageLogger.Log(ev.Seq, "→ DB.LOOKUP_TIPO", new()
+                {
+                    { "codigo", ev.TipoMensajeCodigo },
+                    { "tipoId", tipoId },
+                    { "found", tipoMensaje != null },
+                });
+
+                var nuevoMensaje = new Mensaje
+                {
+                    Id = ev.MensajeId,
+                    ConversacionId = chatId,
+                    EmisorId = ev.EmisorId,
+                    TipoMensajeId = tipoId,
+                    Contenido = ev.Contenido,
+                    CreadoAt = DateTime.UtcNow
+                };
+
+                _context.Mensajes.Add(nuevoMensaje);
+                await _context.SaveChangesAsync();
+                MessageLogger.Log(ev.Seq, "✓ DB.INSERT_MSG_OK", new() { { "msgId", nuevoMensaje.Id } });
+
+                await transaction.CommitAsync();
+                MessageLogger.Log(ev.Seq, "✓ TX.COMMIT");
+
+                await _notificationRepository.PublicarNuevoMensajeAsync(new NuevoMensajeNotification(
+                    MensajeId: nuevoMensaje.Id,
+                    ConversacionId: chatId,
+                    EmisorId: nuevoMensaje.EmisorId,
+                    Contenido: nuevoMensaje.Contenido ?? string.Empty,
+                    TipoMensajeCodigo: ev.TipoMensajeCodigo,
+                    CreadoAt: nuevoMensaje.CreadoAt
+                ));
+                MessageLogger.Log(ev.Seq, "✓ NOTIF.PublishNuevoMensaje", new() { { "msgId", nuevoMensaje.Id } });
 
                 MessageLogger.Log(ev.Seq, "✓ REPO.ProcesarNuevoChatUsuarioOnEvent_DONE");
             }
