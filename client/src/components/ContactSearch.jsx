@@ -48,6 +48,7 @@ export default function ContactSearch({ onSelect }) {
           borderRadius: "8px",
           border: "1px solid var(--bg-softer)",
           outline: "none",
+          marginTop: "0.8rem",
         }}
       />
       {debounced && (
