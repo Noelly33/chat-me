@@ -21,7 +21,7 @@ export default function MessageInput({ disabled, onSend, onTyping }) {
     <form className="composer" onSubmit={handleSubmit}>
       <input
         type="text"
-        placeholder={disabled ? "Esperando conexión…" : "Escribí un mensaje"}
+        placeholder={disabled ? "Esperando conexión…" : "Escribe un mensaje"}
         value={text}
         disabled={disabled}
         onChange={(e) => {

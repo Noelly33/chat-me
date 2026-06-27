@@ -42,8 +42,9 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  padding: 1rem;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background: var(--bg-main);
 }
 
 .auth-card {
@@ -172,7 +173,26 @@ input {
   flex-direction: column;
   padding: 1.25rem;
   height: 100vh;
-  overflow-y: auto;
+  overflow: hidden;
+}
+.sidebar-main {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; 
+  min-height: 0; 
+}
+.sidebar-conversations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex-grow: 1;     
+  min-height: 0;    
+  overflow-y: auto; 
+  overflow-x: hidden;
+  scrollbar-color: var(--bg-softer) transparent;
+  
+  
+  scrollbar-width: thin;
 }
 
 .sidebar-brand {
@@ -183,6 +203,7 @@ input {
   padding-bottom: 1.1rem;
   border-bottom: 1px solid var(--bg-softer);
 }
+
 
 .brand-logo {
   width: 48px;
@@ -258,9 +279,11 @@ input {
 }
 
 .sidebar-footer {
-  margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--bg-softer);
+  flex-shrink: 0;
+  margin-top: auto; 
+  padding-top: 1.25rem; 
 }
 
 .user-card {
@@ -496,5 +519,10 @@ input {
   }
   .message {
     max-width: 85%;
+  }
+}
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 1.75rem; 
   }
 }

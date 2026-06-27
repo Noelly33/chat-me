@@ -24,7 +24,8 @@ export default function Chat({ user, onLogout }) {
   return (
     <div className="chat-layout">
       <aside className="sidebar">
-        <div className="sidebar-brand">
+       <div className="sidebar-main">
+         <div className="sidebar-brand">
           <img src="/logo.svg" alt="ChatMe" className="brand-logo" />
           <div className="sidebar-header">
             Chat<span>Me</span>
@@ -32,14 +33,18 @@ export default function Chat({ user, onLogout }) {
         </div>
 
         <ContactSearch onSelect={openContact} />
+        <div className="sidebar-conversations">
+          <div className="online-title">Conversaciones</div>
+          <ConversationList
+            conversations={conversations}
+            activeKey={activeConversation?.key}
+            online={online}
+            onSelect={selectConversation}
+          />
+        </div>
+       </div>
 
-        <div className="online-title">Conversaciones</div>
-        <ConversationList
-          conversations={conversations}
-          activeKey={activeConversation?.key}
-          online={online}
-          onSelect={selectConversation}
-        />
+       
 
         <div className="sidebar-footer">
           <div className="user-card">

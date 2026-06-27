@@ -76,7 +76,7 @@ export default function Login({ onLogin, onRegister }) {
         {tab === "login" ? (
           <form className="auth-form" onSubmit={handleLoginSubmit}>
             <div className="field">
-              <label htmlFor="identifier">Email o usuario</label>
+              <label htmlFor="identifier">Email</label>
               <input
                 id="identifier"
                 type="text"
@@ -189,11 +189,11 @@ export default function Login({ onLogin, onRegister }) {
         <div className="auth-toggle">
           {tab === "login" ? (
             <>
-              ¿No tenés cuenta? <button type="button" onClick={() => switchTab("register")}>Creá una</button>
+              ¿No tienes cuenta? <button type="button" onClick={() => switchTab("register")}>Crea una</button>
             </>
           ) : (
             <>
-              ¿Ya tenés cuenta? <button type="button" onClick={() => switchTab("login")}>Iniciá sesión</button>
+              ¿Ya tienes Cuenta? <button type="button" onClick={() => switchTab("login")}>Inicia sesión</button>
             </>
           )}
         </div>
